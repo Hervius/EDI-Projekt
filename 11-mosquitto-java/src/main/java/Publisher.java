@@ -17,9 +17,18 @@ public class Publisher {
             MqttClient mqttClient = new MqttClient(broker, clientId, persistence);
             MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setCleanSession(true);
+
+            // Warum hat es dann funktioniert, nachdem Sie den Code hier oben kopiert?
+            connOpts.setWill("java/test","bin offline".getBytes(), 1, true);
             System.out.println("Connecting to broker: " + broker);
             mqttClient.connect(connOpts);
             System.out.println("Connected");
+
+            MqttMessage onlineMsg = new MqttMessage("bin online".getBytes());
+            onlineMsg.setRetained(true);
+
+            mqttClient.publish("java/test", onlineMsg); // Warum haben Sie einfach hier nicht "bin online" geschrieben?
+
 
             int i = 0;
             while(i < 100) {
