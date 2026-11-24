@@ -25,5 +25,19 @@ public class ExampleProducer {
 		config.put("key.serializer", StringSerializer.class.getName());
 		config.put("value.serializer", StringSerializer.class.getName());
 
+		try(Producer<String, String> producer = new KafkaProducer<>(config)){
+			while(true){
+				ProducerRecord<String, String> record = new  ProducerRecord<>(topic,
+						"test", "abc");
+				Future<RecordMetadata> future = producer.send(record);	// Hier ist es synchron, warte, bis Bestätigung kommt
+				future.get();	// Hier ist es synchron, warte, bis Bestätigung kommt
+
+				logger.info("Sent new record at topic {}", record.topic());
+				Thread.sleep(1000);
+
+			}
+
+		}
+
 	}
 }

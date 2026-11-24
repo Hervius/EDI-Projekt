@@ -15,5 +15,12 @@ public class ExampleCreateTopic {
 		Properties properties = new Properties();
 		properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 
+
+		try(Admin admin = Admin.create(properties)) {
+			NewTopic topic = new NewTopic("test-topic", 1, (short) 1);
+			CreateTopicsResult result = admin.createTopics(Collections.singleton(topic));
+			result.values().get("test-topic").get();
+		}
+
     }
 }

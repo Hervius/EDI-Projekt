@@ -21,6 +21,7 @@ public class ExampleAsyncProducer {
 		config.put("key.serializer", StringSerializer.class.getName());
 		config.put("value.serializer", StringSerializer.class.getName());
 
+
 	}
 
 }

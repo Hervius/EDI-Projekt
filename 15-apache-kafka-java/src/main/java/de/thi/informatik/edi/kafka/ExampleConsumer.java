@@ -1,6 +1,7 @@
 package de.thi.informatik.edi.kafka;
 import java.net.InetAddress;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -27,6 +28,23 @@ public class ExampleConsumer {
 		config.put("key.deserializer", StringDeserializer.class.getName());
 		config.put("value.deserializer", StringDeserializer.class.getName());
 
+		try(Consumer<String, String> consumer = new KafkaConsumer<>(config)) {
+			consumer.subscribe(List.of(topic));
+			while(true) {
 
+				ConsumerRecords<String, String> records = consumer
+						.poll(Duration.ofDays(2000));
+//				for (ConsumerRecord<String, String> record : records) {
+//					System.out.println(record.value());
+//				}
+				records.forEach(record -> {
+					//System.out.println(record.value());
+					logger.info("Received at topic {} msg {} with key {}",
+							record.topic(), record.value(), record.key());
+				});
+				consumer.commitSync();
+
+			}
+		}
 	}
 }
