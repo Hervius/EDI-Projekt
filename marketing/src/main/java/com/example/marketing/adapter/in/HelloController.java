@@ -1,4 +1,4 @@
-package com.example.marketing;
+package com.example.marketing.adapter.in;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
