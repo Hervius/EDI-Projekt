@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketting - Rabattierte Produkte</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px
+        }
+        h1 {
+            color: #333
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        .rabatt {
+            color: red;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Marketting-Service</h1>
+    <p>Hier sind die aktuellen Produkte mit 10% Rabatt (Live aus dem Backend geladen):</p>
+
+    <table id="produktTabelle">
+        <thead>
+        <tr>
+            <th>Produkt</th>
+            <th>Aktionen</th>
+            <th>Preis (mit Rabatt)</th>
+        </tr>
+        </thead>
+        <tbody>
+            <!-- Hier werden die Daten per Javascript eingefügt -->
+        </tbody>
+    </table>
+
+    <div id="fehlerMeldung" class="error"></div>
+
+    <script>
+        // Diese Funktion ruft deine REST-API auf
+        async function ladeProdukte() {
+            try {
+                // WICHTIG: Der Pfad ist relativ, da das HTML vom gleichen nginx-Server kommt
+                const response = await fetch('/marketing/produkte');
+
+                if (!response.ok) {
+                    throw new Error('Netzwerkantwort war nicht ok: ' + response.status);
+                }
+
+                const produkte = await response.json();
+                const tbody = document.querySelector('#produktTabelle tbody');
+                tbody.innerHTML = ''; // Tabelle leeren
+
+                // Für jedes Produkt eine Zeile in die Tabelle einfügen
+                produkte.forEach(produkt => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${produkt.id}</td>
+                        <td>${produkt.name}</td>
+                        <td class="rabatt">${produkt.preis.toFixed(2)} €</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Fehler beim Laden:', error);
+                document.getElementById('fehlerMeldung').innerText = 'Fehler beim Laden der Produkte. Ist das Backend erreichbar?';
+            }
+        }
+
+        // Beim Laden der Seite automatisch ausführen
+        window.onload = ladeProdukte;
+    </script>
+</body>
+</html>
