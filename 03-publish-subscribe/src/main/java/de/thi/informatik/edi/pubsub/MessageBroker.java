@@ -1,10 +1,12 @@
 package de.thi.informatik.edi.pubsub;
 
 import org.apache.logging.log4j.message.Message;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Service
 public class MessageBroker {
 
     private Map<Topic, List<Subscriber>> subscribers = new HashMap<>();     // Wie könnte man dazu kommen?
