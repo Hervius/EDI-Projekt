@@ -18,7 +18,7 @@ public class Publisher {
             MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setCleanSession(true);
 
-            // Warum hat es dann funktioniert, nachdem Sie den Code hier oben kopiert?
+            // Warum hat es dann funktioniert, nachdem Sie den Code hier oben kopiert haben?
             connOpts.setWill("java/test","bin offline".getBytes(), 1, true);
             System.out.println("Connecting to broker: " + broker);
             mqttClient.connect(connOpts);
