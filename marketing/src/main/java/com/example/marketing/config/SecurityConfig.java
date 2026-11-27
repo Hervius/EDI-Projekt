@@ -1,10 +1,13 @@
 package com.example.marketing.config;
 
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 
@@ -30,7 +33,7 @@ public class SecurityConfig {
                 // 3. Regeln für die Endpunkte festlegen
                 .authorizeHttpRequests(auth -> auth
                         // Das Frontend (HTML, JS) darf jeder sehen
-                        .requestMatchers("/", "/index.html", "/error").permitAll()
+                        .requestMatchers("/", "/index.html", "/error", "/auth/**").permitAll()
                         // Alle anderen Endpunkte (deine API) erfordern einen Token
                         .anyRequest().authenticated()
                 )
@@ -49,5 +52,12 @@ public class SecurityConfig {
                 "HmacSHA256"
         );
         return NimbusJwtDecoder.withSecretKey(secretKey).build();
+    }
+
+    @Bean
+    public JwtEncoder jwtEncoder() {
+        String secret = "MeinSuperGeheimerSchluesselFuerDasProjekt123!";
+        SecretKeySpec secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
     }
 }

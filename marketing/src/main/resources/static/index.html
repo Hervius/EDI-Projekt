@@ -8,86 +8,249 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
-            padding: 20px
+            padding: 20px;
         }
-        h1 {
-            color: #333
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background: white;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #007bff;
-            color: white;
-        }
-        .rabatt {
-            color: red;
-            margin-top: 20px;
-        }
+        h1 { color: #333; }
+        .container { max-width: 800px; margin: auto; background: white;
+        padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
+        input { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { padding: 10px 15px; background: #007bff; color: white; border: none;
+        cursor: pointer; margin-top: 10px; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td {padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #007bff; color: white; }
+        .rabatt {color: #28a745; font-weight: bold; }
+        .error { color: red; margin-top: 10px; }
+
     </style>
 </head>
 <body>
 
-    <h1>Marketing-Service</h1>
-    <p>Hier sind die aktuellen Produkte mit 10% Rabatt (Live aus dem Backend geladen):</p>
+<div class="container">
+    <!-- LOGIN BEREICH -->
+    <div id="loginBereich">
+        <h1>🔐 Login</h1>
+        <p>Bitte melde dich an, um die Produkte zu sehen.</p>
+        <input type="text" id="username" placeholder="Benutzername (admin)">
+        <input type="password" id="password" placeholder="Passwort (admin)">
+        <button onclick="login()">Einloggen</button>
+        <div id="loginFehler" class="error"></div>
+    </div>
 
-    <table id="produktTabelle">
-        <thead>
-        <tr>
-            <th>Produkt</th>
-            <th>Aktionen</th>
-            <th>Preis (mit Rabatt)</th>
-        </tr>
-        </thead>
-        <tbody>
-            <!-- Hier werden die Daten per Javascript eingefügt -->
-        </tbody>
-    </table>
+    <!-- PRODUKT BEREICH (Anfangs versteckt) -->
+    <div id="produktBereich" class="hidden">
+        <h1>🛒 Marketing-Service</h1>
+        <p>Hier sind die aktuellen Produkte mit 10% Rabatt:</p>
+        <button onclick="logout()" style="background: #dc3545;">Logout</button>
 
-    <div id="fehlerMeldung" class="error"></div>
+        <table id="produktTabelle">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Produktname</th>
+                <th>Preis (mit Rabatt)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- Daten werden per JS eingefügt -->
+            </tbody>
+        </table>
+        <div id="produktFehler" class="error"></div>
+    </div>
+</div>
 
-    <script>
-        // Diese Funktion ruft deine REST-API auf
-        async function ladeProdukte() {
-            try {
-                // WICHTIG: Der Pfad ist relativ, da das HTML vom gleichen nginx-Server kommt
-                const response = await fetch('/marketing/produkte');
+<script>
+    // Überprüfen, ob wir schon einen Token haben (z.B. nach einem Reload)
+    window.onload = function() {
+        if (sessionStorage.getItem('jwtToken')) {
+            zeigeProdukte();
+        }
+    };
 
-                if (!response.ok) {
-                    throw new Error('Netzwerkantwort war nicht ok: ' + response.status);
+    async function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const fehlerDiv = document.getElementById('loginFehler');
+        fehlerDiv.innerText = ''; // Alte Fehler löschen
+
+        try {
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: username, password: password })
+            });
+
+            if (!response.ok) {
+                throw new Error('Login fehlgeschlagen. Falsche Zugangsdaten?');
+            }
+
+            const data = await response.json();
+            // Token im sessionStorage speichern
+            sessionStorage.setItem('jwtToken', data.token);
+
+            // Bereich wechseln
+            document.getElementById('loginBereich').classList.add('hidden');
+            document.getElementById('produktBereich').classList.remove('hidden');
+
+            // Produkte laden
+            zeigeProdukte();
+
+        } catch (error) {
+            fehlerDiv.innerText = error.message;
+        }
+    }
+
+    async function zeigeProdukte() {
+        const token = sessionStorage.getItem('jwtToken');
+        if (!token) return; // Falls kein Token da ist, abbrechen
+
+        const fehlerDiv = document.getElementById('produktFehler');
+        fehlerDiv.innerText = '';
+        const tbody = document.querySelector('#produktTabelle tbody');
+        tbody.innerHTML = '';
+
+        try {
+            // Hier wird der Token aus dem sessionStorage im Header mitgeschickt
+            const response = await fetch('/marketing/produkte', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // Token abgelaufen oder ungültig -> Logout erzwingen
+                    logout();
+                    throw new Error('Sitzung abgelaufen. Bitte erneut einloggen.');
                 }
+                throw new Error('Fehler beim Laden der Produkte.');
+            }
 
-                const produkte = await response.json();
-                const tbody = document.querySelector('#produktTabelle tbody');
-                tbody.innerHTML = ''; // Tabelle leeren
+            const produkte = await response.json();
 
-                // Für jedes Produkt eine Zeile in die Tabelle einfügen
-                produkte.forEach(produkt => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
+            produkte.forEach(produkt => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
                         <td>${produkt.id}</td>
                         <td>${produkt.name}</td>
                         <td class="rabatt">${produkt.preis.toFixed(2)} €</td>
                     `;
-                    tbody.appendChild(row);
-                });
-            } catch (error) {
-                console.error('Fehler beim Laden:', error);
-                document.getElementById('fehlerMeldung').innerText = 'Fehler beim Laden der Produkte. Ist das Backend erreichbar? Oder nicht?';
-            }
-        }
+                tbody.appendChild(row);
+            });
 
-        // Beim Laden der Seite automatisch ausführen
-        window.onload = ladeProdukte;
-    </script>
+        } catch (error) {
+            fehlerDiv.innerText = error.message;
+        }
+    }
+
+    function logout() {
+        sessionStorage.removeItem('jwtToken');
+        document.getElementById('produktBereich').classList.add('hidden');
+        document.getElementById('loginBereich').classList.remove('hidden');
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+    }
+</script>
 </body>
 </html>
+
+
+
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="de">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Marketing - Rabattierte Produkte</title>-->
+<!--    <style>-->
+<!--        body {-->
+<!--            font-family: Arial, sans-serif;-->
+<!--            background-color: #f4f4f9;-->
+<!--            padding: 20px-->
+<!--        }-->
+<!--        h1 {-->
+<!--            color: #333-->
+<!--        }-->
+<!--        table {-->
+<!--            width: 100%;-->
+<!--            border-collapse: collapse;-->
+<!--            margin-top: 20px;-->
+<!--            background: white;-->
+<!--            box-shadow: 0 4px 8px rgba(0,0,0,0.1);-->
+<!--        }-->
+<!--        th, td {-->
+<!--            padding: 12px;-->
+<!--            text-align: left;-->
+<!--            border-bottom: 1px solid #ddd;-->
+<!--        }-->
+<!--        th {-->
+<!--            background-color: #007bff;-->
+<!--            color: white;-->
+<!--        }-->
+<!--        .rabatt {-->
+<!--            color: red;-->
+<!--            margin-top: 20px;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+
+<!--    <h1>Marketing-Service</h1>-->
+<!--    <p>Hier sind die aktuellen Produkte mit 10% Rabatt (Live aus dem Backend geladen):</p>-->
+
+<!--    <table id="produktTabelle">-->
+<!--        <thead>-->
+<!--        <tr>-->
+<!--            <th>Produkt</th>-->
+<!--            <th>Aktionen</th>-->
+<!--            <th>Preis (mit Rabatt)</th>-->
+<!--        </tr>-->
+<!--        </thead>-->
+<!--        <tbody>-->
+<!--            &lt;!&ndash; Hier werden die Daten per Javascript eingefügt &ndash;&gt;-->
+<!--        </tbody>-->
+<!--    </table>-->
+
+<!--    <div id="fehlerMeldung" class="error"></div>-->
+
+<!--    <script>-->
+<!--        // Diese Funktion ruft deine REST-API auf-->
+<!--        async function ladeProdukte() {-->
+<!--            try {-->
+<!--                // WICHTIG: Der Pfad ist relativ, da das HTML vom gleichen nginx-Server kommt-->
+<!--                const response = await fetch('/marketing/produkte');-->
+
+<!--                if (!response.ok) {-->
+<!--                    throw new Error('Netzwerkantwort war nicht ok: ' + response.status);-->
+<!--                }-->
+
+<!--                const produkte = await response.json();-->
+<!--                const tbody = document.querySelector('#produktTabelle tbody');-->
+<!--                tbody.innerHTML = ''; // Tabelle leeren-->
+
+<!--                // Für jedes Produkt eine Zeile in die Tabelle einfügen-->
+<!--                produkte.forEach(produkt => {-->
+<!--                    const row = document.createElement('tr');-->
+<!--                    row.innerHTML = `-->
+<!--                        <td>${produkt.id}</td>-->
+<!--                        <td>${produkt.name}</td>-->
+<!--                        <td class="rabatt">${produkt.preis.toFixed(2)} €</td>-->
+<!--                    `;-->
+<!--                    tbody.appendChild(row);-->
+<!--                });-->
+<!--            } catch (error) {-->
+<!--                console.error('Fehler beim Laden:', error);-->
+<!--                document.getElementById('fehlerMeldung').innerText = 'Fehler beim Laden der Produkte. Ist das Backend erreichbar? Oder nicht?';-->
+<!--            }-->
+<!--        }-->
+
+<!--        // Beim Laden der Seite automatisch ausführen-->
+<!--        window.onload = ladeProdukte;-->
+<!--    </script>-->
+<!--</body>-->
+<!--</html>-->
+
+
