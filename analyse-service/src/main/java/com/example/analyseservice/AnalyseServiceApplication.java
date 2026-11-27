@@ -1,4 +1,4 @@
-package analyse_service;
+package com.example.analyseservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
