@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/marketing")
-public class MarketingController {
+public class MarketingController{
 
     private final MarketingService marketingService;
 
@@ -19,7 +19,7 @@ public class MarketingController {
     }
 
     @GetMapping("/produkte")
-    public List<Produkt> getProdukteMitRabatt(){
+    public List<Produkt> getProdukteMitRabatt() {
         return marketingService.getProduktMitRabatt();
     }
 }

@@ -4,12 +4,11 @@ import com.example.marketing.application.port.out.LagerDatenPort;
 import com.example.marketing.domain.model.Produkt;
 import org.springframework.stereotype.Service;
 
-
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-public class MarketingService { // Herzstück (die Application in der hexagolnalen Architektur)
-    // Er ruft das Interface auf, berechnet den Rabatt und gibt das Ergebnis zurück
+public class MarketingService {
 
     private final LagerDatenPort lagerDatenPort;
 
@@ -18,16 +17,18 @@ public class MarketingService { // Herzstück (die Application in der hexagolnal
     }
 
     public List<Produkt> getProduktMitRabatt() {
-        List<Produkt> produkt = lagerDatenPort.holeAlleProdukte();
+        List<Produkt> produkte = lagerDatenPort.holeAlleProdukte();
 
-        for(Produkt p :  produkt) {
-            double neuerPreis = p.getPreis() * 0.90;    // 10% Rabatt
-            p.setPreis(neuerPreis);
-        }
+        // HIER IST DER FEHLER PASSIERT:
+        // Du hast wahrscheinlich außerhalb der Schleife "10.0 * 0.9" gerechnet
+        // und diesen festen Wert jedem Produkt zugewiesen.
 
-        return produkt;
+        // So ist es richtig: Jedes Produkt einzeln berechnen
+        return produkte.stream()
+                .map(p -> {
+                    double neuerPreis = p.getPreis() * 0.9; // 10% Rabatt auf den individuellen Preis
+                    return new Produkt(p.getId(), p.getName(), neuerPreis);
+                })
+                .collect(Collectors.toList());
     }
-
-
-
 }

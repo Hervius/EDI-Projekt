@@ -30,7 +30,7 @@ public class MarketingServiceTest {
         Produkt p2 = new Produkt(2L, "Test B", 20.0);
 
         // Wenn jemand holeAlleProdukte() aufruft, gib diese Liste zurück
-        when(lagerDatenPort.holeAlleProdukte()).thenReturn(Arrays.asList(p1, p2));
+        when(lagerDatenPort.holeAlleProdukte()).thenReturn(List.of(p1, p2));
 
         // 5. WHEN (Aktion): Wir rufen die echte Methode im Service auf
         List<Produkt> ergebnis = marketingService.getProduktMitRabatt();
